@@ -7,19 +7,14 @@ from report import generate_report
 
 def main():
     parser = argparse.ArgumentParser(description="AI Proctoring System")
-    parser.add_argument("--video", type=str, help="Path to video file. If not provided, webcam is used.", default=None)
     parser.add_argument("--headless", action="store_true", help="Run without GUI display")
     args = parser.parse_args()
 
-    if args.video:
-        cap = cv2.VideoCapture(args.video)
-        print(f"Starting session with video: {args.video}")
-    else:
-        cap = cv2.VideoCapture(0)
-        print("Starting session with webcam.")
+    cap = cv2.VideoCapture(0)
+    print("Starting live session with webcam.")
 
     if not cap.isOpened():
-        print("Error: Could not open video source.")
+        print("Error: Could not open webcam.")
         return
 
     detector = ProctorDetector()
@@ -30,6 +25,8 @@ def main():
     
     current_status = "Normal"
     status_color = (0, 255, 0)
+    last_gaze_status = None
+    last_mouth_moving = False
     
     print("Press 'q' to exit.")
     
@@ -37,16 +34,19 @@ def main():
         while True:
             ret, frame = cap.read()
             if not ret:
-                print("End of video stream.")
+                print("Error: Failed to read from webcam stream.")
                 break
                 
             frame = cv2.resize(frame, (640, 480))
-            if args.video:
-                current_time = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-            else:
-                current_time = time.time()
+            current_time = time.time()
             
-            num_faces, head_status, gaze_status, is_blinking, frame = detector.process_frame(frame)
+            num_faces, head_status, gaze_status, is_blinking, mouth_moving, hand_seen, frame = detector.process_frame(frame)
+            if gaze_status != last_gaze_status:
+                violation_manager.add_gaze_movement(gaze_status)
+                last_gaze_status = gaze_status
+            if mouth_moving and not last_mouth_moving:
+                violation_manager.add_mouth_movement()
+            last_mouth_moving = mouth_moving
             
             new_status = "Normal"
             new_color = (0, 255, 0)
@@ -90,8 +90,9 @@ def main():
                         new_color = (0, 0, 255)
                     else:
                         is_looking_away = ("Looking" in head_status) or ("Gaze" in gaze_status and "Center" not in gaze_status)
+                        suspicious_trigger = is_looking_away or mouth_moving or hand_seen
                         
-                        if is_looking_away:
+                        if suspicious_trigger:
                             looking_away_frames += 1
                             if looking_away_frames > Config.GAZE_AWAY_FRAMES_MAX:
                                 new_status = "Violation: Suspicious Movement"
@@ -128,8 +129,7 @@ def main():
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
             else:
-                # In headless mode processing video till end, or just sleep slightly if webcam to prevent blazing loop
-                # Just break if video ends
+                # In headless mode, keep processing live webcam frames.
                 pass
     finally:
         # Cleanup
