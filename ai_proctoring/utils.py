@@ -14,7 +14,29 @@ class ViolationManager:
     def __init__(self, log_file="violations_log.json"):
         self.log_file = log_file
         self.violations = []
+        self.gaze_movements = []
+        self.mouth_movements = []
         self.start_time = time.time()
+        self._load_log()
+
+    def _load_log(self):
+        if not os.path.exists(self.log_file):
+            return
+        try:
+            with open(self.log_file, 'r') as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                # Backward compatibility with older format.
+                self.violations = data
+            elif isinstance(data, dict):
+                self.violations = data.get("violations", [])
+                self.gaze_movements = data.get("gaze_movements", [])
+                self.mouth_movements = data.get("mouth_movements", [])
+        except Exception:
+            # Ignore malformed existing logs and start clean.
+            self.violations = []
+            self.gaze_movements = []
+            self.mouth_movements = []
 
     def add_violation(self, violation_type):
         timestamp = int(time.time() - self.start_time)
@@ -22,12 +44,50 @@ class ViolationManager:
             "timestamp": timestamp,
             "violation": violation_type
         })
-        print(f"[VIOLATION] {violation_type} at {timestamp}s")
+
+    def add_gaze_movement(self, gaze_status):
+        timestamp = int(time.time() - self.start_time)
+        self.gaze_movements.append({
+            "timestamp": timestamp,
+            "gaze": gaze_status
+        })
+
+    def add_mouth_movement(self):
+        timestamp = int(time.time() - self.start_time)
+        self.mouth_movements.append({
+            "timestamp": timestamp,
+            "event": "Mouth Move"
+        })
 
     def save_log(self):
+        suspicious_movement_total = sum(
+            1 for v in self.violations if v.get("violation") == "Suspicious Movement"
+        )
         with open(self.log_file, 'w') as f:
-            json.dump(self.violations, f, indent=4)
-        print(f"Violations saved to {self.log_file}")
+            json.dump(
+                {
+                    "total_suspicious_movements": suspicious_movement_total,
+                    "total_gaze_movements": len(self.gaze_movements),
+                    "total_mouth_movements": len(self.mouth_movements),
+                    "total_movements": (
+                        suspicious_movement_total
+                        + len(self.gaze_movements)
+                        + len(self.mouth_movements)
+                    )
+                },
+                f,
+                indent=4
+            )
+        print(
+            "Session totals saved: "
+            f"suspicious={suspicious_movement_total}, "
+            f"gaze={len(self.gaze_movements)}, "
+            f"mouth={len(self.mouth_movements)}, "
+            f"overall={suspicious_movement_total + len(self.gaze_movements) + len(self.mouth_movements)}"
+        )
 
     def get_violations(self):
         return self.violations
+
+    def get_gaze_movements(self):
+        return self.gaze_movements
