@@ -7,7 +7,7 @@ import os
 class ProctorDetector:
     def __init__(self):
         # Configure MediaPipe Tasks API
-        BaseOptions = mp.tasks.BaseOptions
+        BaseOptions = mp.tasks.BaseOptions #local shortcut
         self.FaceLandmarker = mp.tasks.vision.FaceLandmarker
         self.FaceLandmarkerOptions = mp.tasks.vision.FaceLandmarkerOptions
         self.HandLandmarker = mp.tasks.vision.HandLandmarker
