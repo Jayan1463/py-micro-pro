@@ -36,6 +36,13 @@ class ProctorDetector:
             )
         self.frame_idx = 0
         self.prev_mouth_ratio = None
+        self.mouth_ratio_ema = None
+        self.mouth_delta_ema = 0.0
+        self.mouth_baseline = None
+        self.mouth_baseline_samples = 0
+        self.mouth_motion_frames = 0
+        self.mouth_rest_frames = 0
+        self.mouth_moving_state = False
 
     def process_frame(self, frame):
         """
@@ -171,13 +178,55 @@ class ProctorDetector:
             mouth_width = math.hypot(left_mouth.x - right_mouth.x, left_mouth.y - right_mouth.y)
             mouth_ratio = (mouth_height / mouth_width) if mouth_width > 0 else 0.0
 
-            mouth_open = mouth_ratio > 0.10
-            if self.prev_mouth_ratio is None:
-                mouth_changed = False
+            # Robust mouth movement detection:
+            # 1) Smooth the ratio and motion signal to suppress landmark jitter.
+            # 2) Learn a personal baseline while mouth is mostly at rest.
+            # 3) Use hysteresis + sustain frames to avoid always-on flicker.
+            if self.mouth_ratio_ema is None:
+                self.mouth_ratio_ema = mouth_ratio
             else:
-                mouth_changed = abs(mouth_ratio - self.prev_mouth_ratio) > 0.015
-            self.prev_mouth_ratio = mouth_ratio
-            mouth_moving = mouth_open or mouth_changed
+                self.mouth_ratio_ema = (0.75 * self.mouth_ratio_ema) + (0.25 * mouth_ratio)
+
+            if self.prev_mouth_ratio is None:
+                mouth_delta = 0.0
+            else:
+                mouth_delta = abs(self.mouth_ratio_ema - self.prev_mouth_ratio)
+            self.prev_mouth_ratio = self.mouth_ratio_ema
+            self.mouth_delta_ema = (0.70 * self.mouth_delta_ema) + (0.30 * mouth_delta)
+
+            if self.mouth_baseline is None:
+                self.mouth_baseline = self.mouth_ratio_ema
+            baseline_gap = self.mouth_ratio_ema - self.mouth_baseline
+
+            # Adapt baseline only when stable, so speaking does not poison it.
+            if self.mouth_delta_ema < 0.0035 and baseline_gap < 0.020:
+                self.mouth_baseline = (0.95 * self.mouth_baseline) + (0.05 * self.mouth_ratio_ema)
+                self.mouth_baseline_samples += 1
+
+            baseline_ready = self.mouth_baseline_samples >= 12
+            open_trigger_on = max(self.mouth_baseline + 0.055, 0.14)
+            open_trigger_off = max(self.mouth_baseline + 0.030, 0.11)
+            motion_trigger = 0.006
+
+            strong_motion = (self.mouth_ratio_ema > open_trigger_on) or (self.mouth_delta_ema > motion_trigger)
+            resting_motion = (self.mouth_ratio_ema < open_trigger_off) and (self.mouth_delta_ema < (motion_trigger * 0.75))
+
+            if baseline_ready and strong_motion:
+                self.mouth_motion_frames += 1
+                self.mouth_rest_frames = 0
+            elif baseline_ready and resting_motion:
+                self.mouth_rest_frames += 1
+                self.mouth_motion_frames = max(0, self.mouth_motion_frames - 1)
+            else:
+                self.mouth_motion_frames = max(0, self.mouth_motion_frames - 1)
+                self.mouth_rest_frames = max(0, self.mouth_rest_frames - 1)
+
+            if not self.mouth_moving_state and self.mouth_motion_frames >= 4:
+                self.mouth_moving_state = True
+            elif self.mouth_moving_state and self.mouth_rest_frames >= 5:
+                self.mouth_moving_state = False
+
+            mouth_moving = self.mouth_moving_state
 
             # Annotate Frame with primary face bounds
             x_coords = [lm.x for lm in primary_face]

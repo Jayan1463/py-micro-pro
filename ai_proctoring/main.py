@@ -4,8 +4,11 @@ import argparse
 import threading
 import numpy as np
 from detector import ProctorDetector
+from screen_monitor import ScreenMonitor  # SCREEN_MONITOR_REF: import screen monitor helper
 from utils import ViolationManager, Config
 from report import generate_report
+
+SCREEN_MONITOR_ENABLED = True  # SCREEN_MONITOR_REF: set True to enable screen monitoring, False to disable
 
 try:
     import sounddevice as sd
@@ -131,6 +134,11 @@ def main():
     if args.voice_threshold is not None and voice_monitor.available:
         voice_monitor.threshold = max(0.001, float(args.voice_threshold))
         print(f"Manual voice threshold applied: {voice_monitor.threshold:.3f}")
+
+    # SCREEN_MONITOR_REF START: one-line toggle via SCREEN_MONITOR_ENABLED at top of file
+    screen_monitor = ScreenMonitor(monitor_index=1, fps=1.0)  # Prepared instance for optional activation
+    screen_enabled = screen_monitor.start() if SCREEN_MONITOR_ENABLED else False  # Single-switch start behavior
+    # SCREEN_MONITOR_REF END
     
     no_face_start_time = None
     looking_away_frames = 0
@@ -140,6 +148,7 @@ def main():
     last_gaze_status = None
     last_mouth_moving = False
     last_voice_violation = False
+    last_tab_switch_detected = False
     
     print("Press 'q' to exit.")
     
@@ -168,6 +177,22 @@ def main():
                 level, _ = voice_monitor.snapshot()
                 violation_manager.add_voice_event(level)
             last_voice_violation = voice_violation
+
+            # SCREEN_MONITOR_REF START: poll display changes and log a console hint when scene changes
+            if screen_enabled:  # Only run if screen monitor started successfully
+                screen_data = screen_monitor.poll()  # Rate-limited capture + scene-change score
+                if screen_data and screen_data["scene_changed"]:  # Trigger only on meaningful display change
+                    print(f"[SCREEN] change={screen_data['change_score']:.2f}")  # Lightweight debug/visibility log
+                tab_switch_detected = bool(screen_data and screen_data.get("tab_switch_detected"))
+                if tab_switch_detected and not last_tab_switch_detected:
+                    violation_manager.add_violation("Tab Switch Detected")
+                    print(
+                        "[SCREEN] Tab switch detected "
+                        f"(score={screen_data.get('change_score', 0.0):.2f}, "
+                        f"ratio={screen_data.get('changed_ratio', 0.0):.2f})"
+                    )
+                last_tab_switch_detected = tab_switch_detected
+            # SCREEN_MONITOR_REF END
             
             # Rule 1: No Face
             if num_faces == 0:
@@ -259,6 +284,9 @@ def main():
         # Cleanup
         cap.release()
         voice_monitor.close()
+        # SCREEN_MONITOR_REF: stop screen monitor cleanly if it was started
+        if 'screen_enabled' in locals() and screen_enabled:
+            screen_monitor.stop()
         cv2.destroyAllWindows()
         
         # Save logs and generate report
