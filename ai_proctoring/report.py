@@ -78,18 +78,18 @@ def generate_report(violations, report_path="violations_report.png"):
     sorted_types = sorted(type_counts.items(), key=lambda x: (-x[1], x[0]))
     labels = [item[0] for item in sorted_types]
     values = [item[1] for item in sorted_types]
-    bars = ax_types.bar(labels, values, color="#e11d48")
+    bars = ax_types.barh(labels, values, color="#e11d48")
     ax_types.set_title("Violation Type Distribution", fontsize=12, fontweight="bold")
-    ax_types.set_ylabel("Count")
-    ax_types.grid(axis="y", alpha=0.25)
-    ax_types.tick_params(axis="x", labelrotation=0)
+    ax_types.set_xlabel("Count")
+    ax_types.grid(axis="x", alpha=0.25)
+    ax_types.invert_yaxis()
     for bar, value in zip(bars, values):
         ax_types.text(
-            bar.get_x() + bar.get_width() / 2,
             value + 0.05,
+            bar.get_y() + bar.get_height() / 2,
             str(value),
-            ha="center",
-            va="bottom",
+            ha="left",
+            va="center",
             fontsize=10,
             color="#0f172a",
         )

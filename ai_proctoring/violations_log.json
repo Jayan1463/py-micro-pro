@@ -1,11 +1,7 @@
 {
     "violations": [
         {
-            "timestamp": 2,
-            "violation": "Voice Detected (Talking)"
-        },
-        {
-            "timestamp": 3,
+            "timestamp": 4,
             "violation": "Voice Detected (Talking)"
         },
         {
@@ -13,22 +9,90 @@
             "violation": "Suspicious Movement"
         },
         {
+            "timestamp": 8,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
             "timestamp": 9,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 9,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 12,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 12,
             "violation": "Tab Switch Detected"
         },
         {
-            "timestamp": 11,
+            "timestamp": 12,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 13,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 16,
             "violation": "Tab Switch Detected"
         },
         {
-            "timestamp": 14,
+            "timestamp": 16,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 18,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 20,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 22,
+            "violation": "No Face Detected"
+        },
+        {
+            "timestamp": 24,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 26,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 28,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 28,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 29,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 30,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 30,
             "violation": "Tab Switch Detected"
+        },
+        {
+            "timestamp": 31,
+            "violation": "Suspicious Movement"
         }
     ],
-    "total_suspicious_movements": 1,
+    "total_suspicious_movements": 9,
     "total_tab_switches": 3,
-    "total_gaze_movements": 57,
-    "total_mouth_movements": 4,
-    "total_voice_events": 2,
-    "total_movements": 67
+    "total_gaze_movements": 77,
+    "total_mouth_movements": 66,
+    "total_voice_events": 9,
+    "total_movements": 164
 }
