@@ -9,11 +9,11 @@ class Config:
     LOOKING_AWAY_FRAMES_MAX = 30 # Since we are checking every frame at 30FPS, this is exactly 1 second of looking away
     LIVENESS_MAX_NO_BLINK_SEC = 20.0 # If no blink is detected for 20 seconds, flag as spoofed/not lively
     GAZE_AWAY_FRAMES_MAX = 45 # 1.5 seconds of sustained off-screen eye darting completely independently of head movement
-    VOICE_ACTIVITY_THRESHOLD = 0.025
+    VOICE_ACTIVITY_THRESHOLD = 0.009
     VOICE_VIOLATION_HOLD_SEC = 1.0
     VOICE_CALIBRATION_SEC = 2.0
-    VOICE_THRESHOLD_MARGIN = 2.5
-    VOICE_THRESHOLD_MIN = 0.015
+    VOICE_THRESHOLD_MARGIN = 1.3
+    VOICE_THRESHOLD_MIN = 0.007
 
 class ViolationManager:
     def __init__(self, log_file="violations_log.json"):
@@ -23,7 +23,6 @@ class ViolationManager:
         self.mouth_movements = []
         self.voice_events = []
         self.start_time = time.time()
-        self._load_log()
 
     def _load_log(self):
         if not os.path.exists(self.log_file):
@@ -79,16 +78,21 @@ class ViolationManager:
         suspicious_movement_total = sum(
             1 for v in self.violations if v.get("violation") == "Suspicious Movement"
         )
+        tab_switch_total = sum(
+            1 for v in self.violations if v.get("violation") == "Tab Switch Detected"
+        )
         with open(self.log_file, 'w') as f:
             json.dump(
                 {
                     "violations": self.violations,
                     "total_suspicious_movements": suspicious_movement_total,
+                    "total_tab_switches": tab_switch_total,
                     "total_gaze_movements": len(self.gaze_movements),
                     "total_mouth_movements": len(self.mouth_movements),
                     "total_voice_events": len(self.voice_events),
                     "total_movements": (
                         suspicious_movement_total
+                        + tab_switch_total
                         + len(self.gaze_movements)
                         + len(self.mouth_movements)
                         + len(self.voice_events)
@@ -100,10 +104,11 @@ class ViolationManager:
         print(
             "Session totals saved: "
             f"suspicious={suspicious_movement_total}, "
+            f"tab_switches={tab_switch_total}, "
             f"gaze={len(self.gaze_movements)}, "
             f"mouth={len(self.mouth_movements)}, "
             f"voice={len(self.voice_events)}, "
-            f"overall={suspicious_movement_total + len(self.gaze_movements) + len(self.mouth_movements) + len(self.voice_events)}"
+            f"overall={suspicious_movement_total + tab_switch_total + len(self.gaze_movements) + len(self.mouth_movements) + len(self.voice_events)}"
         )
 
     def get_violations(self):
