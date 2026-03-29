@@ -9,6 +9,11 @@ class Config:
     LOOKING_AWAY_FRAMES_MAX = 30 # Since we are checking every frame at 30FPS, this is exactly 1 second of looking away
     LIVENESS_MAX_NO_BLINK_SEC = 20.0 # If no blink is detected for 20 seconds, flag as spoofed/not lively
     GAZE_AWAY_FRAMES_MAX = 45 # 1.5 seconds of sustained off-screen eye darting completely independently of head movement
+    VOICE_ACTIVITY_THRESHOLD = 0.025
+    VOICE_VIOLATION_HOLD_SEC = 1.0
+    VOICE_CALIBRATION_SEC = 2.0
+    VOICE_THRESHOLD_MARGIN = 2.5
+    VOICE_THRESHOLD_MIN = 0.015
 
 class ViolationManager:
     def __init__(self, log_file="violations_log.json"):
@@ -16,6 +21,7 @@ class ViolationManager:
         self.violations = []
         self.gaze_movements = []
         self.mouth_movements = []
+        self.voice_events = []
         self.start_time = time.time()
         self._load_log()
 
@@ -32,11 +38,13 @@ class ViolationManager:
                 self.violations = data.get("violations", [])
                 self.gaze_movements = data.get("gaze_movements", [])
                 self.mouth_movements = data.get("mouth_movements", [])
+                self.voice_events = data.get("voice_events", [])
         except Exception:
             # Ignore malformed existing logs and start clean.
             self.violations = []
             self.gaze_movements = []
             self.mouth_movements = []
+            self.voice_events = []
 
     def add_violation(self, violation_type):
         timestamp = int(time.time() - self.start_time)
@@ -59,6 +67,14 @@ class ViolationManager:
             "event": "Mouth Move"
         })
 
+    def add_voice_event(self, level):
+        timestamp = int(time.time() - self.start_time)
+        self.voice_events.append({
+            "timestamp": timestamp,
+            "event": "Voice Activity",
+            "level": float(level)
+        })
+
     def save_log(self):
         suspicious_movement_total = sum(
             1 for v in self.violations if v.get("violation") == "Suspicious Movement"
@@ -66,13 +82,16 @@ class ViolationManager:
         with open(self.log_file, 'w') as f:
             json.dump(
                 {
+                    "violations": self.violations,
                     "total_suspicious_movements": suspicious_movement_total,
                     "total_gaze_movements": len(self.gaze_movements),
                     "total_mouth_movements": len(self.mouth_movements),
+                    "total_voice_events": len(self.voice_events),
                     "total_movements": (
                         suspicious_movement_total
                         + len(self.gaze_movements)
                         + len(self.mouth_movements)
+                        + len(self.voice_events)
                     )
                 },
                 f,
@@ -83,7 +102,8 @@ class ViolationManager:
             f"suspicious={suspicious_movement_total}, "
             f"gaze={len(self.gaze_movements)}, "
             f"mouth={len(self.mouth_movements)}, "
-            f"overall={suspicious_movement_total + len(self.gaze_movements) + len(self.mouth_movements)}"
+            f"voice={len(self.voice_events)}, "
+            f"overall={suspicious_movement_total + len(self.gaze_movements) + len(self.mouth_movements) + len(self.voice_events)}"
         )
 
     def get_violations(self):

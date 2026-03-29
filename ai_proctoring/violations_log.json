@@ -1,6 +1,77 @@
 {
-    "total_suspicious_movements": 2,
-    "total_gaze_movements": 300,
-    "total_mouth_movements": 83,
-    "total_movements": 385
+    "violations": [
+        {
+            "timestamp": 3,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 8,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 8,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 11,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 16,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 22,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 24,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 27,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 29,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 34,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 62,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 4,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 21,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 23,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 23,
+            "violation": "Voice Detected (Talking)"
+        },
+        {
+            "timestamp": 26,
+            "violation": "Suspicious Movement"
+        },
+        {
+            "timestamp": 27,
+            "violation": "Voice Detected (Talking)"
+        }
+    ],
+    "total_suspicious_movements": 6,
+    "total_gaze_movements": 46,
+    "total_mouth_movements": 47,
+    "total_voice_events": 3,
+    "total_movements": 102
 }

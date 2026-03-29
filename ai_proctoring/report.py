@@ -82,7 +82,7 @@ def generate_report(violations, report_path="violations_report.png"):
     ax_types.set_title("Violation Type Distribution", fontsize=12, fontweight="bold")
     ax_types.set_ylabel("Count")
     ax_types.grid(axis="y", alpha=0.25)
-    ax_types.tick_params(axis="x", labelrotation=25)
+    ax_types.tick_params(axis="x", labelrotation=0)
     for bar, value in zip(bars, values):
         ax_types.text(
             bar.get_x() + bar.get_width() / 2,
